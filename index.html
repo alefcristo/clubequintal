@@ -101,17 +101,16 @@
 </head>
 <body>
 
-    <!-- TELA DE CARREGAMENTO (IMPORTANTE PARA SINCRONIZAÇÃO) -->
+    <!-- TELA DE CARREGAMENTO -->
     <div id="loadingOverlay">
         <div style="font-size: 3em; color: #1ba37d; margin-bottom: 20px;">
             <i class="fas fa-circle-notch fa-spin"></i>
         </div>
-        <h2 style="color: #333;">Acessando a Planilha...</h2>
-        <p>Sincronizando dados em tempo real.</p>
+        <h2 style="color: #333;">Sincronizando com a Planilha...</h2>
+        <p>Aguarde um momento.</p>
     </div>
 
     <header class="header">
-        <!-- Troque pela sua logo se desejar -->
         <img src="https://i.imgur.com/BMwC2aEl.jpg" alt="Clube Quintal+" class="logo">
         <h1>Painel de Controle – Clube Quintal+</h1>
     </header>
@@ -126,13 +125,13 @@
         </section>
 
         <div class="dashboard-grid">
-            <!-- 2. TOP CLIENTES (LADO ESQUERDO) -->
+            <!-- 2. TOP CLIENTES -->
             <section id="topClientsPanel" class="side-panel">
                 <h2><i class="fas fa-trophy"></i> Top 10 Clientes</h2>
                 <table class="data-table" id="topClientsTable"><thead><tr><th>Nome</th><th>Total</th></tr></thead><tbody></tbody></table>
             </section>
             
-            <!-- 3. FORMULÁRIO DE SERVIÇO (CENTRO) -->
+            <!-- 3. FORMULÁRIO -->
             <section class="form-section">
                 <h2>Adicionar/Atualizar Serviço</h2>
                 <form id="serviceForm">
@@ -140,11 +139,11 @@
                     <input type="tel" id="telefone" placeholder="Telefone (ID Único - Somente Números)" required>
                     <select id="servico" required>
                         <option value="" disabled selected>Selecione o Serviço</option>
-                        <option value="Faxina">Faxina</option>
-                        <option value="Limpeza de Terreno">Limpeza de Terreno</option>
-                        <option value="Limpeza de Piscina">Limpeza de Piscina</option>
-                        <option value="Indicação">Indicação</option>
-                        <option value="Outro">Outro</option>
+                        <option value="Faxina">Faxina (15%)</option>
+                        <option value="Limpeza de Terreno">Limpeza de Terreno (13%)</option>
+                        <option value="Limpeza de Piscina">Limpeza de Piscina (15%)</option>
+                        <option value="Indicação">Indicação (0%)</option>
+                        <option value="Outro">Outro (0%)</option>
                     </select>
                     <input type="number" id="valorServico" placeholder="Valor TOTAL do Serviço (R$)" step="0.01" min="0" required>
                     <input type="date" id="dataServico" required>
@@ -155,14 +154,14 @@
                 </form>
             </section>
             
-            <!-- 4. DETALHES POR SERVIÇO (LADO DIREITO) -->
+            <!-- 4. DETALHES POR SERVIÇO -->
             <section id="serviceMetricsPanel" class="side-panel">
                 <h2><i class="fas fa-chart-pie"></i> Lucro por Categoria</h2>
                 <table class="data-table" id="serviceMetricsTable"><thead><tr><th>Serviço</th><th>Qtd</th><th>Lucro</th></tr></thead><tbody></tbody></table>
             </section>
         </div>
 
-        <!-- 5. LISTA DE CLIENTES (TABELA GERAL) -->
+        <!-- 5. LISTA DE CLIENTES -->
         <section class="clients-table">
             <h2>Lista de Clientes e Histórico</h2>
             <table id="clientsTable">
@@ -192,7 +191,6 @@
         // ============================================================
         // CONFIGURAÇÃO DA NUVEM (GOOGLE SHEETS)
         // ============================================================
-        // Substitua pela sua nova URL se mudar a implantação no futuro
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbxHAq4pbyQ6pMl_VGweXDsmWibDu5DNGt-ft_7eAFKfeDhwDHAck1FTHkVGO2YokAK_5w/exec'; 
 
         // Constantes de Negócio
@@ -201,7 +199,7 @@
         const POINTS_PER_SERVICE = 10;
         const EXPIRATION_MONTHS = 6;
 
-        // Cache Global (A "Memória RAM" do site)
+        // Cache Global
         let globalClients = [];
 
         // --- 1. COMUNICAÇÃO COM A PLANILHA (BACKEND) ---
@@ -210,11 +208,9 @@
             document.getElementById('loadingOverlay').style.display = show ? 'flex' : 'none';
         }
 
-        // LEITURA: Busca os dados da aba DB_CLUBE
         async function loadClientsFromCloud() {
             showLoading(true);
             try {
-                // O Apps Script espera ?action=getClients no GET
                 const response = await fetch(GAS_URL + '?action=getClients');
                 const data = await response.json();
                 
@@ -234,33 +230,27 @@
             }
         }
 
-        // ESCRITA: Envia os dados completos para salvar
         async function saveClientsToCloud(clients) {
             showLoading(true);
             try {
                 const response = await fetch(GAS_URL, {
                     method: 'POST',
-                    mode: 'no-cors', // Modo opaco para evitar erros de CORS em apps simples
+                    mode: 'no-cors', 
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ action: 'saveClients', data: clients })
                 });
-                
-                // Como usamos no-cors, não temos feedback direto de erro JSON.
-                // Atualizamos a interface assumindo sucesso.
                 console.log("Comando de salvar enviado.");
                 globalClients = clients; 
                 renderAllData(globalClients);
-                
             } catch (error) {
                 console.error("Erro ao salvar:", error);
-                alert("Falha crítica ao salvar. Verifique sua conexão.");
+                alert("Falha crítica ao salvar.");
             } finally {
-                // Pequeno delay visual
                 setTimeout(() => showLoading(false), 800);
             }
         }
 
-        // --- 2. CÁLCULOS E LÓGICA DE NEGÓCIO ---
+        // --- 2. CÁLCULOS E LÓGICA DE NEGÓCIO (CORRIGIDO) ---
 
         const formatCurrency = (val) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
         const formatNumber = (val) => new Intl.NumberFormat('pt-BR').format(val);
@@ -283,25 +273,24 @@
             populateTable(clients);
         }
 
-        // Encontra cliente pelo telefone (ID) ou cria novo
         function getOrCreateClient(nome, telefone, clientsList) {
             let client = clientsList.find(c => c.telefone === telefone);
             if (!client) {
                 client = { nome, telefone, pontos: 0, expiraEm: '-', servicos: [] };
                 clientsList.push(client);
             } else {
-                client.nome = nome; // Atualiza nome se tiver mudado
+                client.nome = nome; 
             }
             return client;
         }
 
-        // --- 3. RENDERIZAÇÃO (INTERFACe) ---
+        // --- 3. RENDERIZAÇÃO (INTERFACE) ---
 
         function populateTable(clients) {
             const tbody = document.querySelector('#clientsTable tbody');
             tbody.innerHTML = '';
             
-            // Ordena por pontos (opcional)
+            // Ordena por data do último serviço
             const sortedClients = [...clients].sort((a,b) => new Date(b.servicos[b.servicos.length-1]?.data || 0) - new Date(a.servicos[a.servicos.length-1]?.data || 0));
 
             sortedClients.forEach((c, idx) => {
@@ -312,9 +301,6 @@
                 const row = tbody.insertRow();
                 if(c.pontos >= CREDIT_POINTS_THRESHOLD) row.classList.add('green');
                 if(c.expiraEm === 'EXPIRADO') row.classList.add('gray');
-                
-                // Encontra índice real no array original para ações
-                const realIdx = clients.indexOf(c);
 
                 row.innerHTML = `
                     <td>${c.nome}</td>
@@ -363,7 +349,6 @@
                 topClients.push({ name: c.nome, total: totalClient });
             });
 
-            // Tabela Lateral Direita (Serviços)
             const svcBody = document.querySelector('#serviceMetricsTable tbody');
             svcBody.innerHTML = '';
             Object.keys(services).forEach(k => {
@@ -371,7 +356,6 @@
                 row.innerHTML = `<td>${k}</td><td>${services[k].qtd}</td><td>${formatCurrency(services[k].lucro)}</td>`;
             });
 
-            // Tabela Lateral Esquerda (Top Clientes)
             topClients.sort((a,b) => b.total - a.total);
             const topBody = document.querySelector('#topClientsTable tbody');
             topBody.innerHTML = '';
@@ -381,7 +365,7 @@
             });
         }
 
-        // --- 4. EVENTOS E AÇÕES ---
+        // --- 4. EVENTOS E LÓGICA DE ENVIO (CORRIGIDO) ---
 
         document.getElementById('serviceForm').addEventListener('submit', function(e) {
             e.preventDefault();
@@ -393,15 +377,23 @@
 
             if (!nome || !telefone || !servico || !data || isNaN(valor)) return alert("Preencha todos os campos.");
 
-            // Busca ou cria na lista em memória
+            // Cache local
             const client = getOrCreateClient(nome, telefone, globalClients);
             
-            const comissao = (valor * getCommissionRate(servico)).toFixed(2);
+            // === CORREÇÃO DA FÓRMULA DE COMISSÃO ===
+            // Valor Base = Total / (1 + taxa)
+            // Comissão = Total - Valor Base
+            const rate = getCommissionRate(servico);
+            let comissao = 0;
+
+            if (rate > 0) {
+                comissao = valor - (valor / (1 + rate));
+            }
+            comissao = parseFloat(comissao.toFixed(2));
+            // =======================================
             
-            // Adiciona histórico
-            client.servicos.push({ tipo: servico, data, valor, comissao: parseFloat(comissao) });
+            client.servicos.push({ tipo: servico, data, valor, comissao });
             
-            // Regras de Pontos
             client.pontos += POINTS_PER_SERVICE;
             client.expiraEm = getExpirationDate(data);
 
@@ -409,7 +401,7 @@
             saveClientsToCloud(globalClients);
             
             document.getElementById('serviceForm').reset();
-            alert(`Serviço salvo com sucesso!\nComissão Quintal+: R$ ${comissao}`);
+            alert(`Serviço salvo com sucesso!\nComissão Quintal+: ${formatCurrency(comissao)}`);
         });
 
         document.getElementById('clearFormBtn').onclick = () => document.getElementById('serviceForm').reset();
@@ -447,7 +439,6 @@
             const c = findClient(tel);
             if(!c) return;
             
-            // Preenche o card oculto
             document.getElementById('cardNomeCliente').textContent = c.nome;
             document.getElementById('cardPontos').textContent = c.pontos;
             document.getElementById('cardExpiraEm').textContent = c.expiraEm;
@@ -459,7 +450,6 @@
             const card = document.getElementById('card');
             const main = document.querySelector('main');
             
-            // Truque para gerar imagem: Mostra o card, esconde o resto, tira foto, inverte.
             window.scrollTo(0,0);
             main.style.display = 'none';
             card.style.display = 'flex';
@@ -471,7 +461,7 @@
             });
         }
 
-        // INICIALIZAÇÃO: Busca dados da planilha ao abrir
+        // INICIALIZAÇÃO
         document.addEventListener('DOMContentLoaded', loadClientsFromCloud);
 
     </script>
