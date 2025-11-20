@@ -4,509 +4,140 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel de Controle - Clube Quintal+</title>
+    
+    <!-- Bibliotecas para gerar o Cartão como Imagem -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    
+    <!-- Fontes e Ícones -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
     <style>
-        /* Reset e Base */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        /* --- ESTILOS GERAIS --- */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background-color: #eef1f5; color: #333; padding: 20px; }
+
+        /* --- HEADER --- */
+        header { background-color: #fff; box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1); border-radius: 12px; padding: 20px; text-align: center; margin-bottom: 20px; }
+        header .logo { width: 150px; margin-bottom: 10px; }
+        header h1 { font-size: 28px; font-weight: 700; color: #1ba37d; }
+
+        /* --- LAYOUT DASHBOARD --- */
+        main { display: flex; flex-direction: column; gap: 20px; }
+        .dashboard-grid { display: grid; grid-template-columns: 1fr 2fr 1fr; gap: 20px; align-items: flex-start; }
+        .form-section, .clients-table, .metrics-panel, .side-panel { background-color: #fff; border-radius: 12px; padding: 25px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05); }
+
+        /* --- TÍTULOS --- */
+        .side-panel h2, .form-section h2, .clients-table h2, .metrics-panel h2 {
+            font-size: 18px; font-weight: 700; margin-bottom: 15px; color: #1ba37d; border-bottom: 2px solid #eef1f5; padding-bottom: 10px; text-align: center;
         }
 
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #eef1f5;
-            color: #333;
-            padding: 20px;
-        }
+        /* --- MÉTRICAS (CARDS DE TOPO) --- */
+        .metrics-panel { display: flex; flex-wrap: wrap; justify-content: space-around; gap: 20px; }
+        .metric-card { flex: 1 1 200px; padding: 15px; border-radius: 8px; background-color: #f9f9f9; text-align: center; min-width: 200px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); border: 1px solid #eee; }
+        .metric-card h3 { font-size: 14px; color: #555; margin-bottom: 5px; font-weight: 600; text-transform: uppercase; }
+        .metric-card p { font-size: 28px; font-weight: 800; color: #1ba37d; }
+        #totalLucroQuintal { color: #d9534f; }
 
-        /* Layout Principal */
-        main {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
+        /* --- TABELAS DE DADOS --- */
+        .data-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        .data-table th, .data-table td { padding: 8px 5px; text-align: left; border-bottom: 1px solid #eee; }
+        .data-table th { background-color: #f4f4f4; color: #555; font-weight: 600; }
 
-        /* Header */
-        header {
-            background-color: #fff;
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
-            border-radius: 12px;
-            padding: 20px;
-            text-align: center;
-            margin-bottom: 20px;
-        }
+        /* --- FORMULÁRIO --- */
+        input, select { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; font-size: 15px; background-color: #f9f9f9; }
+        .button-group { display: flex; gap: 10px; margin-top: 15px; }
+        button { padding: 12px 20px; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; flex-grow: 1; transition: 0.2s; }
+        #addServiceBtn { background-color: #1ba37d; }
+        #addServiceBtn:hover { background-color: #148a6a; }
+        #clearFormBtn { background-color: #6c757d; }
 
-        header .logo {
-            width: 150px;
-            margin-bottom: 10px;
-        }
+        /* --- TABELA PRINCIPAL DE CLIENTES --- */
+        .clients-table { overflow-x: auto; }
+        table { width: 100%; border-collapse: separate; border-spacing: 0; }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #eee; font-size: 14px; }
+        th { background-color: #f4f4f4; color: #555; text-transform: uppercase; }
+        .green { background-color: #e6ffe6; } /* Destaca quem tem crédito */
+        .gray { background-color: #f0f0f0; color: #999; font-style: italic; } /* Expirados */
+        .points-cell { font-weight: 700; font-size: 16px; }
+        .points-cell.high { color: #1ba37d; }
+        .points-cell.low { color: #ffc107; }
 
-        header h1 {
-            font-size: 28px;
-            font-weight: 700;
-            color: #1ba37d;
-        }
+        /* --- AÇÕES (BOTÕES PEQUENOS) --- */
+        .actions { display: flex; gap: 5px; flex-wrap: wrap; }
+        .actions button { padding: 8px 12px; font-size: 12px; flex-grow: 0; min-width: 100px; }
+        .actions .generate-card { background-color: #007bff; }
+        .actions .apply-credit { background-color: #ffc107; color: #333; }
+        .actions .expire-points { background-color: #6c757d; }
+        .actions .remove { background-color: #dc3545; }
 
-        /* Seções de Conteúdo (Formulário e Tabela) */
-        .form-section, .clients-table, .metrics-panel, .side-panel {
-            background-color: #fff;
-            border-radius: 12px;
-            padding: 25px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
-        }
-
-        /* --- NOVO LAYOUT DE GRID PARA O DASHBOARD --- */
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: 1fr 2fr 1fr; /* Três colunas: Painel | Formulário | Painel */
-            gap: 20px;
-            align-items: flex-start;
-        }
-
-        .side-panel {
-            padding: 15px;
-        }
-
-        .side-panel h2 {
-            font-size: 18px;
-            font-weight: 700;
-            margin-bottom: 15px;
-            color: #1ba37d;
-            border-bottom: 2px solid #eef1f5;
-            padding-bottom: 10px;
-            text-align: center;
-        }
+        /* --- LOADING OVERLAY (CRÍTICO PARA SINCRONIZAÇÃO) --- */
+        #loadingOverlay { display:none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(255,255,255,0.9); z-index: 2000; justify-content: center; align-items: center; flex-direction: column; }
         
-        .form-section {
-            max-width: none;
-            margin: 0;
-        }
+        /* --- ESTILO DO CARTÃO DE FIDELIDADE (OCULTO POR PADRÃO) --- */
+        .card { display: none; width: 1080px; height: 1350px; background-color: #1a433a; color: #f0f0f0; padding: 60px; border-radius: 40px; border: 10px solid #d4af37; position: relative; overflow: hidden; font-family: 'Poppins', sans-serif; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.5); flex-direction: column; justify-content: space-between; align-items: center; }
+        .card-header .club-name { font-size: 52px; color: #d4af37; letter-spacing: 3px; margin-bottom: 20px; }
+        .card-header .client-name { font-family: 'Inter', sans-serif; font-size: 140px; font-weight: 700; color: #d4af37; letter-spacing: 8px; text-shadow: 0 0 15px rgba(212,175,55,0.7); line-height: 1; text-transform: uppercase; }
+        .card-info p { font-size: 40px; font-weight: 300; margin: 15px 0; }
+        .card-info strong { color: #d4af37; }
+        .card-points-status { background-color: #1a433a; border-radius: 15px; padding: 30px; margin-bottom: 60px; width: 90%; border: 2px solid rgba(212,175,55,0.3); }
+        .card-points-status .icon { font-size: 50px; color: #D4AF37; margin-bottom: 15px; }
+        .card-points-status p { font-size: 40px; font-weight: 600; color: #D4AF37; }
+        .card-benefits { background-color: rgba(255,255,255,0.05); border-radius: 15px; padding: 30px; margin-bottom: 50px; width: 90%; }
+        .card-benefits .benefit-item { margin: 30px 0; display: flex; align-items: center; justify-content: center; gap: 20px; }
+        .card-benefits .benefit-item .icon { font-size: 48px; color: #D4AF37; }
+        .card-benefits .benefit-item p { font-size: 30px; font-weight: 300; text-align: left; }
+        .card-benefits .benefit-item strong { font-weight: 700; color: #D4AF37; }
+        .card-footer-text { font-size: 38px; font-weight: 300; font-style: italic; color: #D4AF37; margin-top: 30px; }
+        .card-disclaimer { width: 100%; background-color: rgba(0,0,0,0.3); padding: 20px; font-size: 24px; color: #F0F0F0; margin-top: auto; }
 
-        .form-section h2, .clients-table h2, .metrics-panel h2 {
-            font-size: 20px;
-            font-weight: 700;
-            margin-bottom: 15px;
-            color: #1ba37d;
-            border-bottom: 2px solid #eef1f5;
-            padding-bottom: 10px;
-            text-align: center;
-        }
-
-        /* --- PAINEL DE MÉTRICAS GLOBAIS --- */
-        .metrics-panel {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-around;
-            gap: 20px;
-        }
-
-        .metric-card {
-            flex: 1 1 200px;
-            padding: 15px;
-            border-radius: 8px;
-            background-color: #f9f9f9;
-            text-align: center;
-            min-width: 200px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-            border: 1px solid #eee;
-        }
-
-        .metric-card h3 {
-            font-size: 14px;
-            color: #555;
-            margin-bottom: 5px;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-
-        .metric-card p {
-            font-size: 28px;
-            font-weight: 800;
-            color: #1ba37d;
-        }
-        
-        #totalLucroQuintal {
-            color: #d9534f;
-        }
-
-        /* Tabela nos Painéis Laterais */
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 14px;
-        }
-        .data-table th, .data-table td {
-            padding: 8px 5px;
-            text-align: left;
-            border-bottom: 1px solid #eee;
-        }
-        .data-table th {
-            background-color: #f4f4f4;
-            color: #555;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-        .data-table tr:last-child td {
-            border-bottom: none;
-        }
-
-
-        /* Formulário */
-        input, select {
-            width: 100%;
-            padding: 12px;
-            margin: 10px 0;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 15px;
-            background-color: #f9f9f9;
-            transition: border-color 0.3s, box-shadow 0.3s;
-        }
-
-        input:focus, select:focus {
-            border-color: #1ba37d;
-            box-shadow: 0 0 5px rgba(27, 163, 125, 0.3);
-            outline: none;
-        }
-
-        /* Botões do Formulário */
-        .button-group {
-            display: flex;
-            gap: 10px;
-            margin-top: 15px;
-        }
-
-        button {
-            padding: 12px 20px;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background-color 0.3s, transform 0.1s;
-            font-size: 15px;
-            font-weight: 600;
-            flex-grow: 1;
-        }
-
-        #addServiceBtn {
-            background-color: #1ba37d;
-        }
-
-        #addServiceBtn:hover {
-            background-color: #157c5d;
-            transform: translateY(-1px);
-        }
-
-        #clearFormBtn {
-            background-color: #6c757d;
-        }
-
-        #clearFormBtn:hover {
-            background-color: #5a6268;
-            transform: translateY(-1px);
-        }
-
-        /* Tabela Principal */
-        .clients-table {
-            overflow-x: auto;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: separate;
-            border-spacing: 0;
-        }
-
-        th, td {
-            padding: 12px 15px;
-            text-align: left;
-            border-bottom: 1px solid #eee;
-            font-size: 14px;
-            vertical-align: middle;
-        }
-
-        th {
-            background-color: #f4f4f4;
-            font-weight: 700;
-            color: #555;
-            text-transform: uppercase;
-        }
-
-        .clients-table tbody tr:hover {
-            background-color: #f9f9f9;
-            transition: background-color 0.2s;
-        }
-
-        .green {
-            background-color: #e6ffe6;
-            font-weight: 600;
-        }
-
-        .gray {
-            background-color: #f0f0f0;
-            color: #999;
-            font-style: italic;
-        }
-
-        .points-cell {
-            font-weight: 700;
-            font-size: 16px;
-        }
-
-        .points-cell.high {
-            color: #1ba37d;
-        }
-
-        .points-cell.low {
-            color: #ffc107;
-        }
-
-        .actions {
-            display: flex;
-            gap: 5px;
-            flex-wrap: wrap;
-        }
-
-        /* --- CORES DOS BOTÕES DE AÇÃO NA TABELA --- */
-        .actions button {
-            padding: 8px 12px;
-            font-size: 12px;
-            flex-grow: 0;
-            min-width: 100px;
-        }
-        .actions .generate-card {
-            background-color: #007bff; /* Azul */
-        }
-        .actions .generate-card:hover {
-            background-color: #0056b3;
-        }
-        .actions .apply-credit {
-            background-color: #ffc107; /* Amarelo */
-            color: #333;
-        }
-        .actions .apply-credit:hover {
-            background-color: #e0a800;
-        }
-        .actions .expire-points {
-            background-color: #6c757d; /* Cinza */
-        }
-        .actions .expire-points:hover {
-            background-color: #5a6268;
-        }
-        .actions .remove {
-            background-color: #dc3545; /* Vermelho */
-        }
-        .actions .remove:hover {
-            background-color: #c82333;
-        }
-        /* --- FIM CORES BOTÕES --- */
-        
-        /* --- ESTILO DO CARD (CORREÇÃO DE LAYOUT E FONTES) --- */
-        .card {
-            display: none; /* Inicia oculto */
-            width: 1080px;
-            height: 1350px;
-            background-color: #1a433a; /* Verde Escuro Sólido */
-            color: #f0f0f0;
-            padding: 60px;
-            border-radius: 40px;
-            border: 10px solid #d4af37; /* Borda Dourada */
-            position: relative;
-            overflow: hidden;
-            font-family: 'Poppins', sans-serif;
-            text-align: center;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
-            
-            /* --- NOVOS ESTILOS PARA LAYOUT FLEX --- */
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between; /* Distribui o conteúdo verticalmente */
-            align-items: center; /* Centraliza horizontalmente */
-            line-height: 1.2;
-            text-rendering: optimizeLegibility; /* Melhor renderização de texto */
-            -webkit-font-smoothing: antialiased; /* Suaviza fontes no Webkit */
-            -moz-osx-font-smoothing: grayscale; /* Suaviza fontes no Firefox */
-        }
-
-        .card-header {
-            margin-bottom: 50px; /* Ajuste para espaçamento */
-        }
-
-        .card-header .club-name {
-            font-size: 52px;
-            font-weight: 400;
-            color: #d4af37;
-            letter-spacing: 3px;
-            text-transform: uppercase;
-            margin-bottom: 20px;
-        }
-
-        .card-header .client-name {
-            font-family: 'Inter', sans-serif;
-            font-size: 140px; /* Tamanho maior para o nome */
-            font-weight: 700;
-            color: #d4af37;
-            text-transform: uppercase;
-            letter-spacing: 8px;
-            text-shadow: 0 0 15px rgba(212, 175, 55, 0.7);
-            line-height: 1; /* Eliminar espaçamento extra de linha */
-        }
-
-        .card-info {
-            margin-bottom: 60px;
-        }
-
-        .card-info p {
-            font-size: 40px; /* Tamanho padrão para info */
-            font-weight: 300;
-            margin: 15px 0;
-            letter-spacing: 1px;
-        }
-
-        .card-info strong {
-            font-weight: 700;
-            color: #d4af37;
-        }
-
-        .card-points-status {
-            background-color: #1a433a; /* Mesma cor do fundo principal para manter a estética */
-            border-radius: 15px;
-            padding: 30px;
-            margin-bottom: 60px;
-            width: 90%; /* Ajuste para largura */
-            border: 2px solid rgba(212, 175, 55, 0.3); /* Borda sutil */
-        }
-
-        .card-points-status .icon {
-            font-size: 50px;
-            color: #D4AF37;
-            margin-bottom: 15px;
-        }
-
-        .card-points-status p {
-            font-size: 40px; /* Tamanho padrão */
-            font-weight: 600;
-            color: #D4AF37; /* Dourado para o texto de status */
-        }
-        
-        .card-benefits {
-            background-color: rgba(255, 255, 255, 0.05); /* Fundo sutil para os benefícios */
-            border-radius: 15px;
-            padding: 30px;
-            margin-bottom: 50px; /* Espaçamento antes do rodapé */
-            width: 90%; /* Ajuste para largura */
-        }
-
-        .card-benefits .benefit-item {
-            margin: 30px 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 20px;
-        }
-
-        .card-benefits .benefit-item .icon {
-            font-size: 48px;
-            color: #D4AF37;
-        }
-
-        .card-benefits .benefit-item p {
-            font-size: 30px; /* Tamanho do texto dos benefícios */
-            font-weight: 300;
-            line-height: 1.2;
-            text-align: left;
-        }
-        
-        .card-benefits .benefit-item strong {
-            font-weight: 700;
-            color: #D4AF37;
-        }
-
-        .card-footer-text {
-            font-family: 'Poppins', sans-serif;
-            font-size: 38px;
-            font-weight: 300;
-            font-style: italic;
-            margin-top: 30px;
-            opacity: 0.9;
-            color: #D4AF37;
-            flex-grow: 1; /* Permite que o texto ocupe o espaço extra */
-        }
-
-        .card-disclaimer {
-            width: 100%;
-            background-color: rgba(0, 0, 0, 0.3);
-            padding: 20px;
-            font-size: 24px;
-            font-weight: 300;
-            text-transform: none;
-            letter-spacing: 1px;
-            color: #F0F0F0;
-            text-align: center;
-            margin-top: auto; /* Garante que fique no fundo */
-        }
-        /* --- FIM ESTILO CARD --- */
-
-
-        /* Responsividade para o novo Grid */
         @media (max-width: 1024px) {
-            .dashboard-grid {
-                grid-template-columns: 1fr;
-            }
-            .side-panel {
-                order: 2;
-            }
-            .form-section {
-                order: 1;
-            }
+            .dashboard-grid { grid-template-columns: 1fr; }
+            .side-panel { order: 2; }
+            .form-section { order: 1; }
         }
     </style>
 </head>
 <body>
+
+    <!-- TELA DE CARREGAMENTO (IMPORTANTE PARA SINCRONIZAÇÃO) -->
+    <div id="loadingOverlay">
+        <div style="font-size: 3em; color: #1ba37d; margin-bottom: 20px;">
+            <i class="fas fa-circle-notch fa-spin"></i>
+        </div>
+        <h2 style="color: #333;">Acessando a Planilha...</h2>
+        <p>Sincronizando dados em tempo real.</p>
+    </div>
+
     <header class="header">
+        <!-- Troque pela sua logo se desejar -->
         <img src="https://i.imgur.com/BMwC2aEl.jpg" alt="Clube Quintal+" class="logo">
         <h1>Painel de Controle – Clube Quintal+</h1>
     </header>
 
     <main>
+        <!-- 1. MÉTRICAS GLOBAIS -->
         <section class="metrics-panel">
-            <h2>Métricas Financeiras Globais - Quintal Limpo</h2>
-            <div class="metric-card">
-                <h3>Total de Serviços</h3>
-                <p id="totalServicosGlobal">0</p>
-            </div>
-            <div class="metric-card">
-                <h3>Valor Total de Serviços (Clientes)</h3>
-                <p id="valorTotalServicos">R$ 0,00</p>
-            </div>
-            <div class="metric-card">
-                <h3>Lucro Total da Quintal</h3>
-                <p id="totalLucroQuintal">R$ 0,00</p>
-            </div>
+            <h2>Métricas Financeiras Globais</h2>
+            <div class="metric-card"><h3>Total de Serviços</h3><p id="totalServicosGlobal">0</p></div>
+            <div class="metric-card"><h3>Valor Total (Vendas)</h3><p id="valorTotalServicos">R$ 0,00</p></div>
+            <div class="metric-card"><h3>Lucro Quintal+</h3><p id="totalLucroQuintal">R$ 0,00</p></div>
         </section>
 
         <div class="dashboard-grid">
-            
+            <!-- 2. TOP CLIENTES (LADO ESQUERDO) -->
             <section id="topClientsPanel" class="side-panel">
-                <h2><i class="fas fa-trophy"></i> Top 10 Clientes (Valor Gasto)</h2>
-                <table class="data-table" id="topClientsTable">
-                    <thead>
-                        <tr><th>Nome</th><th>Total Gasto</th></tr>
-                    </thead>
-                    <tbody>
-                        </tbody>
-                </table>
+                <h2><i class="fas fa-trophy"></i> Top 10 Clientes</h2>
+                <table class="data-table" id="topClientsTable"><thead><tr><th>Nome</th><th>Total</th></tr></thead><tbody></tbody></table>
             </section>
             
+            <!-- 3. FORMULÁRIO DE SERVIÇO (CENTRO) -->
             <section class="form-section">
                 <h2>Adicionar/Atualizar Serviço</h2>
                 <form id="serviceForm">
                     <input type="text" id="nome" placeholder="Nome do Cliente" required>
-                    <input type="tel" id="telefone" placeholder="Telefone (somente números)" required>
+                    <input type="tel" id="telefone" placeholder="Telefone (ID Único - Somente Números)" required>
                     <select id="servico" required>
                         <option value="" disabled selected>Selecione o Serviço</option>
                         <option value="Faxina">Faxina</option>
@@ -518,544 +149,331 @@
                     <input type="number" id="valorServico" placeholder="Valor TOTAL do Serviço (R$)" step="0.01" min="0" required>
                     <input type="date" id="dataServico" required>
                     <div class="button-group">
-                        <button type="submit" id="addServiceBtn">Adicionar / Atualizar Serviço</button>
+                        <button type="submit" id="addServiceBtn">Salvar na Planilha</button>
                         <button type="button" id="clearFormBtn">Limpar</button>
                     </div>
                 </form>
             </section>
             
+            <!-- 4. DETALHES POR SERVIÇO (LADO DIREITO) -->
             <section id="serviceMetricsPanel" class="side-panel">
-                <h2><i class="fas fa-chart-pie"></i> Lucro e Serviços Detalhado</h2>
-                <table class="data-table" id="serviceMetricsTable">
-                    <thead>
-                        <tr><th>Serviço</th><th>Serviços</th><th>Lucro (R$)</th></tr>
-                    </thead>
-                    <tbody>
-                        </tbody>
-                </table>
+                <h2><i class="fas fa-chart-pie"></i> Lucro por Categoria</h2>
+                <table class="data-table" id="serviceMetricsTable"><thead><tr><th>Serviço</th><th>Qtd</th><th>Lucro</th></tr></thead><tbody></tbody></table>
             </section>
-
         </div>
 
+        <!-- 5. LISTA DE CLIENTES (TABELA GERAL) -->
         <section class="clients-table">
             <h2>Lista de Clientes e Histórico</h2>
             <table id="clientsTable">
                 <thead>
-                    <tr>
-                        <th>Nome</th>
-                        <th>Telefone</th>
-                        <th>Serviços Realizados</th>
-                        <th>Valor Total Gasto (R$)</th>
-                        <th>Lucro Total Quintal (R$)</th>
-                        <th>Pontos</th>
-                        <th>Expira em</th>
-                        <th>Ações</th>
-                    </tr>
+                    <tr><th>Nome</th><th>Telefone</th><th>Serviços</th><th>Total Gasto</th><th>Lucro</th><th>Pontos</th><th>Expira em</th><th>Ações</th></tr>
                 </thead>
-                <tbody>
-                    </tbody>
+                <tbody></tbody>
             </table>
         </section>
     </main>
 
+    <!-- CARD OCULTO PARA GERAÇÃO DE IMAGEM -->
     <div id="card" class="card">
-        <div class="card-header">
-            <p class="club-name">CLUBE QUINTAL+</p>
-            <h2 class="client-name" id="cardNomeCliente"></h2>
-        </div>
-        <div class="card-info">
-            <p>Você tem <strong id="cardPontos">0</strong> pontos acumulados.</p>
-            <p>Válido até: <strong id="cardExpiraEm"></strong></p>
-        </div>
-        <div class="card-points-status">
-            <div class="icon fas fa-check-circle"></div>
-            <p id="cardStatusCredito">Ainda não há crédito disponível.</p>
-        </div>
+        <div class="card-header"><p class="club-name">CLUBE QUINTAL+</p><h2 class="client-name" id="cardNomeCliente"></h2></div>
+        <div class="card-info"><p>Você tem <strong id="cardPontos">0</strong> pontos acumulados.</p><p>Válido até: <strong id="cardExpiraEm"></strong></p></div>
+        <div class="card-points-status"><div class="icon fas fa-check-circle"></div><p id="cardStatusCredito"></p></div>
         <div class="card-benefits">
-            <div class="benefit-item">
-                <span class="icon fas fa-leaf"></span>
-                <p>A cada serviço realizado: <strong>+10 pontos</strong></p>
-            </div>
-            <div class="benefit-item">
-                <span class="icon fas fa-handshake"></span>
-                <p>A cada indicação confirmada: <strong>+10 pontos</strong></p>
-            </div>
-            <div class="benefit-item">
-                <span class="icon fas fa-gift"></span>
-                <p>Ao atingir <strong>100 pontos: R$ 20</strong> de crédito automático no próximo agendamento</p>
-            </div>
+            <div class="benefit-item"><span class="icon fas fa-leaf"></span><p>Cada serviço: <strong>+10 pontos</strong></p></div>
+            <div class="benefit-item"><span class="icon fas fa-handshake"></span><p>Cada indicação: <strong>+10 pontos</strong></p></div>
+            <div class="benefit-item"><span class="icon fas fa-gift"></span><p>100 pontos: <strong>R$ 20</strong> de crédito</p></div>
         </div>
         <p class="card-footer-text">Espaços mais limpos, vidas mais tranquilas.</p>
-        <div class="card-disclaimer">Este cartão é pessoal e intransferível. Válido por 6 meses após o último serviço.</div>
+        <div class="card-disclaimer">Cartão pessoal. Válido por 6 meses após último serviço.</div>
     </div>
 
     <script>
-        // --- CONFIGURAÇÃO DE NUVEM CRÍTICA ---
-        // A URL da sua API do Google Apps Script
-        const GAS_URL = 'https://script.google.com/macros/s/AKfycbyb-h5UgmEHGn66Fe_LaYAyKvyGG5cR3LieUYi4v0GMhpm6n9Y3Pr2aJfmrRluLpPtpLg/exec'; 
-        // -------------------------------------
+        // ============================================================
+        // CONFIGURAÇÃO DA NUVEM (GOOGLE SHEETS)
+        // ============================================================
+        // Substitua pela sua nova URL se mudar a implantação no futuro
+        const GAS_URL = 'https://script.google.com/macros/s/AKfycbxHAq4pbyQ6pMl_VGweXDsmWibDu5DNGt-ft_7eAFKfeDhwDHAck1FTHkVGO2YokAK_5w/exec'; 
 
-        // Constantes
+        // Constantes de Negócio
         const CREDIT_POINTS_THRESHOLD = 100;
         const CREDIT_AMOUNT = 20;
         const POINTS_PER_SERVICE = 10;
         const EXPIRATION_MONTHS = 6;
 
-        // Função utilitária para formatação monetária (Real Brasileiro)
-        const formatCurrency = (value) => {
-            return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
-        };
+        // Cache Global (A "Memória RAM" do site)
+        let globalClients = [];
 
-        // Função utilitária para formatação de números
-        const formatNumber = (value) => {
-            return new Intl.NumberFormat('pt-BR').format(value);
-        };
+        // --- 1. COMUNICAÇÃO COM A PLANILHA (BACKEND) ---
 
-        // Função para obter a taxa de comissão
-        const getCommissionRate = (service) => {
-            switch (service) {
-                case 'Faxina':
-                case 'Limpeza de Piscina':
-                    return 0.15; // 15%
-                case 'Limpeza de Terreno':
-                    return 0.13; // 13%
-                default:
-                    return 0; // 0% para Indicação/Outro
+        function showLoading(show) {
+            document.getElementById('loadingOverlay').style.display = show ? 'flex' : 'none';
+        }
+
+        // LEITURA: Busca os dados da aba DB_CLUBE
+        async function loadClientsFromCloud() {
+            showLoading(true);
+            try {
+                // O Apps Script espera ?action=getClients no GET
+                const response = await fetch(GAS_URL + '?action=getClients');
+                const data = await response.json();
+                
+                if (data.status === 'success') {
+                    globalClients = data.clients || [];
+                    console.log("Dados carregados:", globalClients.length, "clientes.");
+                    renderAllData(globalClients);
+                } else {
+                    console.error("Erro do Script:", data.message);
+                    alert("Erro ao ler planilha. Verifique o console.");
+                }
+            } catch (error) {
+                console.error("Erro de Rede:", error);
+                alert("Não foi possível conectar à planilha.");
+            } finally {
+                showLoading(false);
             }
-        };
+        }
 
-        // Função para obter a data de expiração (6 meses após a data do serviço)
-        const getExpirationDate = (serviceDate) => {
-            const expDate = new Date(serviceDate);
-            expDate.setMonth(expDate.getMonth() + EXPIRATION_MONTHS);
-            return expDate.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-        };
-
-        // =========================================================================
-        // --- FUNÇÕES DE PERSISTÊNCIA HÍBRIDA (LOCAL E NUVEM) ---
-        // =========================================================================
-
-        // 1. SALVAR DADOS (Local e Nuvem)
-        const saveClients = (clients) => {
-            // A. Salva Localmente (IMEDIATO)
-            localStorage.setItem('clients', JSON.stringify(clients));
-            console.log("Dados salvos localmente (localStorage).");
-
-            // B. Salva na Nuvem (Assíncrono para Backup)
-            saveDataToCloud(clients);
-        };
-
-        // Função Assíncrona para salvar no Google Sheets via Apps Script (GAS)
-        const saveDataToCloud = async (clients) => {
+        // ESCRITA: Envia os dados completos para salvar
+        async function saveClientsToCloud(clients) {
+            showLoading(true);
             try {
                 const response = await fetch(GAS_URL, {
                     method: 'POST',
-                    mode: 'no-cors', // Necessário para evitar erros de CORS no ambiente local (file://)
+                    mode: 'no-cors', // Modo opaco para evitar erros de CORS em apps simples
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'saveClients', data: clients }),
+                    body: JSON.stringify({ action: 'saveClients', data: clients })
                 });
-                console.log("Tentativa de sincronização com o Google Sheets enviada. (Verifique o GAS para confirmação)");
-            } catch (error) {
-                console.error('Erro CRÍTICO ao tentar sincronizar com o Google Sheets:', error);
-            }
-        };
-
-        // 2. CARREGAR DADOS (Preferência Local > Nuvem)
-        const loadClients = async () => {
-            let clients = JSON.parse(localStorage.getItem('clients'));
-            
-            if (clients && clients.length > 0) {
-                console.log("Dados carregados do localStorage (rápido).");
-            } else {
-                console.log("localStorage vazio. Tentando carregar da nuvem...");
-                // Tenta carregar da nuvem
-                clients = await loadDataFromCloud();
-                if (clients && clients.length > 0) {
-                    // Se carregou da nuvem, salva localmente para a próxima vez
-                    localStorage.setItem('clients', JSON.stringify(clients));
-                    console.log("Dados carregados da nuvem e salvos no localStorage.");
-                } else {
-                    console.log("Nenhum dado encontrado localmente ou na nuvem. Iniciando com lista vazia.");
-                    clients = [];
-                }
-            }
-            
-            // Renderiza com os dados carregados (seja local ou nuvem)
-            renderAllData(clients);
-            return clients;
-        };
-
-        // Função Assíncrona para carregar do Google Sheets via Apps Script (GAS)
-        const loadDataFromCloud = async () => {
-            try {
-                // Adiciona o parâmetro de ação para a função doGet no Apps Script
-                const response = await fetch(GAS_URL + '?action=getClients'); 
                 
-                const data = await response.json();
-                if (data.status === 'success') {
-                    return data.clients || [];
-                } else {
-                    console.error("Erro no retorno da API do Sheets:", data.message);
-                    return null;
-                }
+                // Como usamos no-cors, não temos feedback direto de erro JSON.
+                // Atualizamos a interface assumindo sucesso.
+                console.log("Comando de salvar enviado.");
+                globalClients = clients; 
+                renderAllData(globalClients);
+                
             } catch (error) {
-                console.error('Erro ao carregar dados do Google Sheets:', error);
-                // Retorna nulo para indicar que a carga falhou
-                return null;
+                console.error("Erro ao salvar:", error);
+                alert("Falha crítica ao salvar. Verifique sua conexão.");
+            } finally {
+                // Pequeno delay visual
+                setTimeout(() => showLoading(false), 800);
             }
+        }
+
+        // --- 2. CÁLCULOS E LÓGICA DE NEGÓCIO ---
+
+        const formatCurrency = (val) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
+        const formatNumber = (val) => new Intl.NumberFormat('pt-BR').format(val);
+        
+        const getCommissionRate = (svc) => {
+            if(['Faxina', 'Limpeza de Piscina'].includes(svc)) return 0.15; // 15%
+            if(svc === 'Limpeza de Terreno') return 0.13; // 13%
+            return 0;
         };
 
-        // =========================================================================
-        // --- FUNÇÃO CENTRAL DE RENDERIZAÇÃO E UTILS ---
-        // =========================================================================
-        
-        const renderAllData = (clients) => {
-            // Chama todas as funções de cálculo e renderização
+        const getExpirationDate = (dateStr) => {
+            const d = new Date(dateStr);
+            d.setMonth(d.getMonth() + EXPIRATION_MONTHS);
+            return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        };
+
+        function renderAllData(clients) {
             calculateAllMetrics(clients);
-            calculateAndDisplayDashboardMetrics(clients);
-            populateClientsTable(clients);
-        };
-        
-        // Função para encontrar ou criar um cliente
-        const getOrCreateClient = (nome, telefone, clients) => {
-            let client = clients.find(c => c.telefone === telefone);
+            calculateDashboard(clients);
+            populateTable(clients);
+        }
 
+        // Encontra cliente pelo telefone (ID) ou cria novo
+        function getOrCreateClient(nome, telefone, clientsList) {
+            let client = clientsList.find(c => c.telefone === telefone);
             if (!client) {
-                client = {
-                    nome,
-                    telefone,
-                    pontos: 0,
-                    expiraEm: getExpirationDate(new Date()),
-                    servicos: []
-                };
-                clients.push(client);
+                client = { nome, telefone, pontos: 0, expiraEm: '-', servicos: [] };
+                clientsList.push(client);
             } else {
-                // Atualiza o nome, caso o cliente tenha mudado o registro
-                client.nome = nome; 
+                client.nome = nome; // Atualiza nome se tiver mudado
             }
             return client;
-        };
+        }
 
-        // Função para popular a tabela de clientes (Principal)
-        const populateClientsTable = (clients) => {
-            const tableBody = document.querySelector('#clientsTable tbody');
-            tableBody.innerHTML = '';
+        // --- 3. RENDERIZAÇÃO (INTERFACe) ---
 
-            clients.forEach((client, index) => {
-                const realServices = client.servicos.filter(s => s.tipo !== 'Indicação');
-                const totalServicos = realServices.length;
+        function populateTable(clients) {
+            const tbody = document.querySelector('#clientsTable tbody');
+            tbody.innerHTML = '';
+            
+            // Ordena por pontos (opcional)
+            const sortedClients = [...clients].sort((a,b) => new Date(b.servicos[b.servicos.length-1]?.data || 0) - new Date(a.servicos[a.servicos.length-1]?.data || 0));
 
-                const valorTotalGasto = client.servicos.reduce((sum, s) => sum + s.valor, 0);
-                const lucroTotalQuintal = client.servicos.reduce((sum, s) => sum + s.comissao, 0);
-
-                const creditStatusClass = client.pontos >= CREDIT_POINTS_THRESHOLD ? 'green' : '';
-                const expiredStatusClass = client.expiraEm === 'EXPIRADO' ? 'gray' : '';
-
-                const row = tableBody.insertRow();
-                row.className = `${creditStatusClass} ${expiredStatusClass}`;
-
-                row.insertCell().textContent = client.nome;
-                row.insertCell().textContent = client.telefone;
-                row.insertCell().textContent = totalServicos; 
-                row.insertCell().textContent = formatCurrency(valorTotalGasto);
-                row.insertCell().textContent = formatCurrency(lucroTotalQuintal);
+            sortedClients.forEach((c, idx) => {
+                const totalSvc = c.servicos.filter(s => s.tipo !== 'Indicação').length;
+                const totalGasto = c.servicos.reduce((sum, s) => sum + s.valor, 0);
+                const lucro = c.servicos.reduce((sum, s) => sum + s.comissao, 0);
                 
-                const pointsCell = row.insertCell();
-                pointsCell.className = `points-cell ${client.pontos >= CREDIT_POINTS_THRESHOLD ? 'high' : 'low'}`;
-                pointsCell.textContent = client.pontos;
+                const row = tbody.insertRow();
+                if(c.pontos >= CREDIT_POINTS_THRESHOLD) row.classList.add('green');
+                if(c.expiraEm === 'EXPIRADO') row.classList.add('gray');
+                
+                // Encontra índice real no array original para ações
+                const realIdx = clients.indexOf(c);
 
-                row.insertCell().textContent = client.expiraEm;
-
-                const actionsCell = row.insertCell();
-                actionsCell.className = 'actions';
-                actionsCell.innerHTML = `
-                    <button class="generate-card" onclick="generateCard(${index})"><i class="fas fa-print"></i> Cartão</button>
-                    <button class="apply-credit" onclick="applyCredit(${index}, '${client.nome}')" ${client.pontos < CREDIT_POINTS_THRESHOLD ? 'disabled' : ''}><i class="fas fa-hand-holding-usd"></i> Aplicar Crédito</button>
-                    <button class="expire-points" onclick="expirePoints(${index}, '${client.nome}')"><i class="fas fa-clock"></i> Expirar</button>
-                    <button class="remove" onclick="removeClient(${index}, '${client.nome}')"><i class="fas fa-trash"></i> Remover</button>
+                row.innerHTML = `
+                    <td>${c.nome}</td>
+                    <td>${c.telefone}</td>
+                    <td>${totalSvc}</td>
+                    <td>${formatCurrency(totalGasto)}</td>
+                    <td>${formatCurrency(lucro)}</td>
+                    <td class="points-cell ${c.pontos >= 100 ? 'high' : 'low'}">${c.pontos}</td>
+                    <td>${c.expiraEm}</td>
+                    <td class="actions">
+                        <button class="generate-card" onclick="generateCard('${c.telefone}')"><i class="fas fa-print"></i> Cartão</button>
+                        <button class="apply-credit" onclick="applyCredit('${c.telefone}')" ${c.pontos < 100 ? 'disabled' : ''}><i class="fas fa-hand-holding-usd"></i> Crédito</button>
+                        <button class="expire-points" onclick="expirePoints('${c.telefone}')"><i class="fas fa-clock"></i> Expirar</button>
+                        <button class="remove" onclick="removeClient('${c.telefone}')"><i class="fas fa-trash"></i> Remover</button>
+                    </td>
                 `;
             });
-        };
-        
-        // Função para calcular e exibir as métricas globais (Painel de Topo)
-        const calculateAllMetrics = (clients) => {
-            let totalServicosGlobal = 0;
-            let valorTotalServicos = 0;
-            let totalLucroQuintal = 0;
+        }
 
-            clients.forEach(client => {
-                client.servicos.forEach(servico => {
-                    if (servico.tipo !== 'Indicação') {
-                        totalServicosGlobal += 1;
-                    }
-                    valorTotalServicos += servico.valor;
-                    totalLucroQuintal += servico.comissao;
+        function calculateAllMetrics(clients) {
+            let qtd = 0, valor = 0, lucro = 0;
+            clients.forEach(c => {
+                c.servicos.forEach(s => {
+                    if(s.tipo !== 'Indicação') qtd++;
+                    valor += s.valor;
+                    lucro += s.comissao;
                 });
             });
+            document.getElementById('totalServicosGlobal').textContent = formatNumber(qtd);
+            document.getElementById('valorTotalServicos').textContent = formatCurrency(valor);
+            document.getElementById('totalLucroQuintal').textContent = formatCurrency(lucro);
+        }
 
-            document.getElementById('totalServicosGlobal').textContent = formatNumber(totalServicosGlobal);
-            document.getElementById('valorTotalServicos').textContent = formatCurrency(valorTotalServicos);
-            document.getElementById('totalLucroQuintal').textContent = formatCurrency(totalLucroQuintal);
-        };
-        
-        // Função para calcular e exibir as métricas do Dashboard Lateral
-        const calculateAndDisplayDashboardMetrics = (clients) => {
-            const serviceAggregates = {};
-            const clientTotalSpent = {};
-            
-            // 1. Agregação de Dados
-            clients.forEach(client => {
-                let totalSpent = 0;
-                
-                client.servicos.forEach(servico => {
-                    const tipo = servico.tipo;
-                    
-                    // Agregação por Serviço
-                    if (!serviceAggregates[tipo]) {
-                        serviceAggregates[tipo] = { count: 0, profit: 0, totalValue: 0 };
-                    }
-                    
-                    if (tipo !== 'Indicação') {
-                        serviceAggregates[tipo].count += 1;
-                    }
-                    serviceAggregates[tipo].profit += servico.comissao;
-                    serviceAggregates[tipo].totalValue += servico.valor;
-                    
-                    // Agregação por Cliente
-                    totalSpent += servico.valor;
+        function calculateDashboard(clients) {
+            const services = {};
+            const topClients = [];
+
+            clients.forEach(c => {
+                let totalClient = 0;
+                c.servicos.forEach(s => {
+                    if(!services[s.tipo]) services[s.tipo] = { qtd: 0, lucro: 0 };
+                    if(s.tipo !== 'Indicação') services[s.tipo].qtd++;
+                    services[s.tipo].lucro += s.comissao;
+                    totalClient += s.valor;
                 });
-                
-                clientTotalSpent[client.telefone] = {
-                    name: client.nome,
-                    totalSpent: totalSpent
-                };
+                topClients.push({ name: c.nome, total: totalClient });
             });
 
-            // 2. Display de Métricas por Serviço (Painel Direito)
-            const serviceTableBody = document.querySelector('#serviceMetricsTable tbody');
-            serviceTableBody.innerHTML = '';
-            
-            const sortedServices = Object.keys(serviceAggregates)
-                .map(tipo => ({ tipo, ...serviceAggregates[tipo] }))
-                .sort((a, b) => b.profit - a.profit);
-
-            sortedServices.forEach(data => {
-                const row = serviceTableBody.insertRow();
-                
-                row.innerHTML = `
-                    <td>${data.tipo}</td>
-                    <td>${data.count}</td>
-                    <td>${formatCurrency(data.profit)}</td>
-                `;
+            // Tabela Lateral Direita (Serviços)
+            const svcBody = document.querySelector('#serviceMetricsTable tbody');
+            svcBody.innerHTML = '';
+            Object.keys(services).forEach(k => {
+                const row = svcBody.insertRow();
+                row.innerHTML = `<td>${k}</td><td>${services[k].qtd}</td><td>${formatCurrency(services[k].lucro)}</td>`;
             });
-            
-            // 3. Display de Top Clientes (Painel Esquerdo)
-            const topClientsTableBody = document.querySelector('#topClientsTable tbody');
-            topClientsTableBody.innerHTML = '';
-            
-            const clientList = Object.values(clientTotalSpent);
-            clientList.sort((a, b) => b.totalSpent - a.totalSpent);
-            
-            const top10Clients = clientList.slice(0, 10);
-            
-            top10Clients.forEach(client => {
-                const row = topClientsTableBody.insertRow();
-                row.innerHTML = `
-                    <td>${client.name.split(' ')[0]}</td>
-                    <td>${formatCurrency(client.totalSpent)}</td>
-                `;
+
+            // Tabela Lateral Esquerda (Top Clientes)
+            topClients.sort((a,b) => b.total - a.total);
+            const topBody = document.querySelector('#topClientsTable tbody');
+            topBody.innerHTML = '';
+            topClients.slice(0, 10).forEach(c => {
+                const row = topBody.insertRow();
+                row.innerHTML = `<td>${c.name.split(' ')[0]}</td><td>${formatCurrency(c.total)}</td>`;
             });
-        };
+        }
 
+        // --- 4. EVENTOS E AÇÕES ---
 
-        // Evento de submissão do formulário
         document.getElementById('serviceForm').addEventListener('submit', function(e) {
             e.preventDefault();
-
             const nome = document.getElementById('nome').value.trim();
             const telefone = document.getElementById('telefone').value.replace(/\D/g, '').trim();
-            const servicoTipo = document.getElementById('servico').value;
-            const dataServicoStr = document.getElementById('dataServico').value;
-            let valorServicoTotal = parseFloat(document.getElementById('valorServico').value);
+            const servico = document.getElementById('servico').value;
+            const data = document.getElementById('dataServico').value;
+            const valor = parseFloat(document.getElementById('valorServico').value);
 
-            if (!nome || !telefone || !servicoTipo || !dataServicoStr || isNaN(valorServicoTotal) || valorServicoTotal < 0) {
-                alert("Por favor, preencha todos os campos, incluindo o valor TOTAL do serviço.");
-                return;
-            }
+            if (!nome || !telefone || !servico || !data || isNaN(valor)) return alert("Preencha todos os campos.");
 
-            if (servicoTipo !== 'Indicação' && servicoTipo !== 'Outro' && valorServicoTotal <= 0) {
-                alert("O valor TOTAL do serviço deve ser maior que zero para este tipo de serviço.");
-                return;
-            }
+            // Busca ou cria na lista em memória
+            const client = getOrCreateClient(nome, telefone, globalClients);
             
-            let clients = JSON.parse(localStorage.getItem('clients')) || [];
+            const comissao = (valor * getCommissionRate(servico)).toFixed(2);
             
-            // 1. Encontra ou cria o cliente na lista atualizada
-            const client = getOrCreateClient(nome, telefone, clients);
+            // Adiciona histórico
+            client.servicos.push({ tipo: servico, data, valor, comissao: parseFloat(comissao) });
             
-            // 2. Calcula comissão (Lucro da Quintal)
-            const commissionRate = getCommissionRate(servicoTipo);
-            let comissaoQuintal = 0;
-            
-            if (commissionRate > 0) {
-                comissaoQuintal = (valorServicoTotal * commissionRate) / (1 + commissionRate);
-                comissaoQuintal = parseFloat(comissaoQuintal.toFixed(2));
-            }
-            
-            const pontosGanhos = POINTS_PER_SERVICE;
+            // Regras de Pontos
+            client.pontos += POINTS_PER_SERVICE;
+            client.expiraEm = getExpirationDate(data);
 
-            // 3. Cria a transação
-            const newTransaction = {
-                tipo: servicoTipo,
-                data: dataServicoStr,
-                valor: valorServicoTotal,
-                comissao: comissaoQuintal
-            };
-
-            // 4. Atualiza o cliente
-            client.servicos.push(newTransaction);
-            client.pontos += pontosGanhos;
-            client.expiraEm = getExpirationDate(new Date(dataServicoStr));
-
-            // 5. Salva (Local e Nuvem) e recarrega
-            const clientIndex = clients.findIndex(c => c.telefone === telefone);
-            if (clientIndex === -1) {
-                 clients.push(client);
-            }
-
-            saveClients(clients); // SALVA DUPLO (LOCAL + NUVEM)
-            renderAllData(clients);
+            // Salva na NUVEM
+            saveClientsToCloud(globalClients);
             
             document.getElementById('serviceForm').reset();
-            alert(`Serviço de ${servicoTipo} no valor TOTAL de ${formatCurrency(valorServicoTotal)} adicionado para ${nome}. Quintal lucrou ${formatCurrency(comissaoQuintal)}.`);
+            alert(`Serviço salvo com sucesso!\nComissão Quintal+: R$ ${comissao}`);
         });
 
-        // Evento de limpar formulário
-        document.getElementById('clearFormBtn').addEventListener('click', function() {
-            document.getElementById('serviceForm').reset();
-            document.getElementById('servico').value = '';
-        });
+        document.getElementById('clearFormBtn').onclick = () => document.getElementById('serviceForm').reset();
 
-        // --- FUNÇÕES DE AÇÃO (CRÉDITO, EXPIRAR, REMOVER) ---
+        function findClient(tel) { return globalClients.find(c => c.telefone === tel); }
 
-        // Aplicar crédito (zerar pontos e aplicar valor)
-        function applyCredit(index, nome) {
-            let clients = JSON.parse(localStorage.getItem('clients')) || [];
-            const client = clients[index];
-
-            const currentCreditThreshold = Math.floor(client.pontos / CREDIT_POINTS_THRESHOLD);
-            if (currentCreditThreshold === 0) {
-                alert('O cliente não possui pontos suficientes para aplicar o crédito.');
-                return;
+        function applyCredit(tel) {
+            const c = findClient(tel);
+            if(!c) return;
+            const qtd = Math.floor(c.pontos / 100);
+            if(qtd > 0 && confirm(`Cliente tem ${c.pontos} pontos.\nAplicar R$ ${qtd*20} de desconto agora?`)) {
+                c.pontos -= (qtd * 100);
+                saveClientsToCloud(globalClients);
+                alert("Crédito aplicado! Saldo de pontos atualizado.");
             }
-
-            const creditToApply = currentCreditThreshold * CREDIT_AMOUNT;
-            const pointsToRemove = currentCreditThreshold * CREDIT_POINTS_THRESHOLD;
-
-            if (!confirm(`Tem certeza que deseja aplicar R$ ${creditToApply.toFixed(2)} de crédito para ${nome}? Isso irá remover ${pointsToRemove} pontos.`)) {
-                return;
-            }
-            
-            client.pontos -= pointsToRemove;
-            saveClients(clients); // SALVA DUPLO (LOCAL + NUVEM)
-            renderAllData(clients);
-            alert(`Crédito de ${formatCurrency(creditToApply)} aplicado para ${nome}. ${pointsToRemove} pontos removidos. Pontos restantes: ${client.pontos}.`);
         }
 
-        // Expirar pontos (zerar e mudar cor para cinza)
-        function expirePoints(index, nome) {
-            if (!confirm(`Tem certeza que deseja expirar os pontos de ${nome}? Isso irá zerar os pontos e marcar como expirado.`)) {
-                return;
+        function expirePoints(tel) {
+            const c = findClient(tel);
+            if(c && confirm(`ATENÇÃO: Deseja ZERAR os pontos de ${c.nome}?`)) {
+                c.pontos = 0;
+                c.expiraEm = 'EXPIRADO';
+                saveClientsToCloud(globalClients);
             }
-            let clients = JSON.parse(localStorage.getItem('clients')) || [];
-            clients[index].pontos = 0;
-            clients[index].expiraEm = 'EXPIRADO';
-            saveClients(clients); // SALVA DUPLO (LOCAL + NUVEM)
-            renderAllData(clients);
-            alert(`Pontos de ${nome} expirados e zerados.`);
         }
 
-        // Remover cliente
-        function removeClient(index, nome) {
-            if (!confirm(`Tem certeza que deseja remover o cliente ${nome} permanentemente?`)) {
-                return;
+        function removeClient(tel) {
+            if(confirm("Tem certeza que deseja EXCLUIR este cliente e todo o histórico?")) {
+                globalClients = globalClients.filter(c => c.telefone !== tel);
+                saveClientsToCloud(globalClients);
             }
-            let clients = JSON.parse(localStorage.getItem('clients')) || [];
-            clients.splice(index, 1);
-            saveClients(clients); // SALVA DUPLO (LOCAL + NUVEM)
-            renderAllData(clients);
-            alert(`Cliente ${nome} removido.`);
         }
 
-        // Função para gerar o cartão (Não alterada, depende apenas dos dados do cliente)
-        function generateCard(index) {
-            const clients = JSON.parse(localStorage.getItem('clients')) || [];
-            const client = clients[index];
-
-            if (!client) return;
-
-            document.getElementById('cardNomeCliente').textContent = client.nome.toUpperCase();
-            document.getElementById('cardPontos').innerHTML = client.pontos;
-            document.getElementById('cardExpiraEm').innerHTML = client.expiraEm;
+        function generateCard(tel) {
+            const c = findClient(tel);
+            if(!c) return;
             
-            const statusElement = document.getElementById('cardStatusCredito');
+            // Preenche o card oculto
+            document.getElementById('cardNomeCliente').textContent = c.nome;
+            document.getElementById('cardPontos').textContent = c.pontos;
+            document.getElementById('cardExpiraEm').textContent = c.expiraEm;
             
-            const creditAvailable = Math.floor(client.pontos / CREDIT_POINTS_THRESHOLD) * CREDIT_AMOUNT;
+            const credit = Math.floor(c.pontos/100) * 20;
+            const msg = credit > 0 ? `CRÉDITO DISPONÍVEL: ${formatCurrency(credit)}!` : `Faltam ${100 - c.pontos} pts para ganhar R$20.`;
+            document.getElementById('cardStatusCredito').textContent = msg;
+
+            const card = document.getElementById('card');
+            const main = document.querySelector('main');
             
-            if (creditAvailable > 0) {
-                statusElement.innerHTML = `CRÉDITO DISPONÍVEL! <br> Você pode resgatar ${formatCurrency(creditAvailable)}!`;
-            } else {
-                const pointsToNextCredit = CREDIT_POINTS_THRESHOLD - client.pontos;
-                statusElement.innerHTML = `Faltam ${pointsToNextCredit} pontos para seu crédito!`;
-            }
-
-            const cardElement = document.getElementById('card');
+            // Truque para gerar imagem: Mostra o card, esconde o resto, tira foto, inverte.
+            window.scrollTo(0,0);
+            main.style.display = 'none';
+            card.style.display = 'flex';
             
-            // 1. Oculta o painel principal e posiciona o card fora da tela para renderização isolada
-            document.querySelector('main').style.display = 'none';
-
-            cardElement.style.position = 'absolute';
-            cardElement.style.left = '-9999px';
-            cardElement.style.top = '0';
-            cardElement.style.display = 'flex'; // Use flex para o layout interno do card
-            cardElement.style.zIndex = '1000';
-
-            // Pequeno atraso para garantir que o DOM seja completamente renderizado com os novos estilos
-            setTimeout(() => {
-                html2canvas(cardElement, {
-                    scale: 1, // Mantém escala 1 para dimensões exatas (1080x1350)
-                    logging: false,
-                    useCORS: true 
-                }).then(function(canvas) {
-                    
-                    // 2. Ocultar o card e restaurar o painel principal após a geração/download
-                    cardElement.style.display = 'none';
-                    cardElement.style.position = 'relative';
-                    cardElement.style.top = 'auto';
-                    cardElement.style.left = 'auto';
-                    document.querySelector('main').style.display = 'flex';
-
-                    // 3. Salvar a imagem
-                    canvas.toBlob(function(blob) {
-                        saveAs(blob, `Clube_Quintal_Card_${client.nome.replace(/\s/g, '_')}.png`);
-                    }, 'image/png');
-                }).catch(error => {
-                    console.error('Erro ao gerar card:', error);
-                    alert('Erro ao gerar o card. Verifique o console para detalhes.');
-                    
-                    // Em caso de erro, restaurar o painel principal
-                    cardElement.style.display = 'none';
-                    cardElement.style.position = 'relative';
-                    cardElement.style.top = 'auto';
-                    cardElement.style.left = 'auto';
-                    document.querySelector('main').style.display = 'flex';
-                });
-            }, 100); // 100ms de atraso
+            html2canvas(card).then(canvas => {
+                canvas.toBlob(blob => saveAs(blob, `Cartao_${c.nome}.png`));
+                card.style.display = 'none';
+                main.style.display = 'flex';
+            });
         }
 
-        // Inicializar a tabela ao carregar a página
-        document.addEventListener('DOMContentLoaded', loadClients);
+        // INICIALIZAÇÃO: Busca dados da planilha ao abrir
+        document.addEventListener('DOMContentLoaded', loadClientsFromCloud);
+
     </script>
 </body>
 </html>
-
